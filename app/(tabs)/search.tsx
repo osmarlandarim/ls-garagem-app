@@ -15,8 +15,69 @@ interface CarCardProps {
   styles: any; // You can replace 'any' with the correct type if desired
 }
 
+
 function CarCard({ car, styles }: CarCardProps) {
   const [imgUri, setImgUri] = React.useState(car.imagemLocal || car.foto || car.imagem || car.image);
+  const [favorito, setFavorito] = React.useState(car.garagem?.favorito ?? false);
+  const [garagem, setGaragem] = React.useState(car.garagem ?? null);
+
+  // Adiciona carro à garagem
+  const handleAddToGarage = async () => {
+    try {
+      const res = await apiFetch('http://localhost:3000/garagens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ carroId: car.id, favorito: false })
+      });
+      if (!res.ok) throw new Error('Erro ao adicionar à garagem');
+      const data = await res.json();
+      setGaragem(data);
+      setFavorito(false);
+      Alert.alert('Sucesso', 'Carro adicionado à garagem!');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível adicionar à garagem.');
+    }
+  };
+
+  // Remove carro da garagem
+  const handleRemoveFromGarage = async () => {
+    if (!garagem?.id) return;
+    try {
+      const res = await apiFetch(`http://localhost:3000/garagens/${garagem.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Erro ao remover da garagem');
+      setGaragem(null);
+      setFavorito(false);
+      Alert.alert('Removido', 'Carro removido da garagem!');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível remover da garagem.');
+    }
+  };
+
+  // Alterna favorito carro na garagem
+  const handleFavorite = async () => {
+    if (!garagem?.id) {
+      Alert.alert('Atenção', 'Adicione o carro à garagem antes de favoritar.');
+      return;
+    }
+    try {
+      const novoFavorito = !garagem.favorito;
+      const res = await apiFetch(`http://localhost:3000/garagens/${garagem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ favorito: novoFavorito })
+      });
+      if (!res.ok) throw new Error('Erro ao atualizar favorito');
+      setFavorito(novoFavorito);
+      setGaragem({ ...garagem, favorito: novoFavorito });
+      Alert.alert('Sucesso', novoFavorito ? 'Carro favoritado!' : 'Favorito removido!');
+    } catch (e) {
+      Alert.alert('Erro', 'Não foi possível atualizar favorito.');
+    }
+  };
+
   return (
     <View style={styles.cardSmall} key={car.id}>
       <View style={styles.imageContainerSmall}>
@@ -31,14 +92,40 @@ function CarCard({ car, styles }: CarCardProps) {
       <View style={styles.cardInfoSmall}>
         <Text style={styles.cardTitleSmall} numberOfLines={2}>{car.name}</Text>
         <Text style={styles.cardSubSmall}>{car.year} {car.color ? `- ${car.color}` : ''}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
+          {garagem ? (
+            <TouchableOpacity onPress={handleRemoveFromGarage} style={{ marginHorizontal: 8 }}>
+              <IconSymbol name="minus" color="#E61C23" size={24} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleAddToGarage} style={{ marginHorizontal: 8 }}>
+              <IconSymbol name="plus" color="#007AFF" size={24} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={handleFavorite}
+            style={{ marginHorizontal: 8 }}
+            disabled={!garagem}
+          >
+            <IconSymbol
+              name={garagem && garagem.favorito ? "star.fill" : "star"}
+              color={garagem ? (garagem.favorito ? "#FFD700" : "#ddd") : "#ccc"}
+              size={24}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => Alert.alert('Em breve', 'Funcionalidade em desenvolvimento.')} style={{ marginHorizontal: 8 }}>
+            <IconSymbol name="questionmark.circle" color="#888" size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 }
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { apiFetch } from '@/utils/api';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
