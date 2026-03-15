@@ -4,6 +4,7 @@ interface Car {
   foto?: string;
   imagem?: string;
   image?: string;
+  imagemLocal?: string;
   name: string;
   year?: string | number;
   color?: string;
@@ -15,14 +16,14 @@ interface CarCardProps {
 }
 
 function CarCard({ car, styles }: CarCardProps) {
-  const [imgUri, setImgUri] = React.useState(car.foto || car.imagem || car.image);
+  const [imgUri, setImgUri] = React.useState(car.imagemLocal || car.foto || car.imagem || car.image);
   return (
     <View style={styles.cardSmall} key={car.id}>
       <View style={styles.imageContainerSmall}>
         <Image
           source={{ uri: imgUri }}
           style={styles.imageSmall}
-          contentFit="cover"
+          contentFit="contain"
           placeholder="https://via.placeholder.com/150"
           onError={() => setImgUri('https://via.placeholder.com/150')}
         />
@@ -205,6 +206,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 0,
+    resizeMode: 'contain',
+    backgroundColor: '#fff',
   },
   cardInfoSmall: {
     padding: 8,
