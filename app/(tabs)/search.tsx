@@ -1,5 +1,19 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { apiFetch } from '@/utils/api';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 // Componente para exibir o card do carro com fallback de imagem
 interface Car {
+    garagem?: {
+      id: string;
+      usuarioId: string;
+      carroId: string;
+      listaGaragemId?: string | null;
+      favorito: boolean;
+      carro?: any;
+    };
   id: string | number;
   foto?: string;
   imagem?: string;
@@ -9,14 +23,6 @@ interface Car {
   year?: string | number;
   color?: string;
   sku?: string;
-  garagem?: {
-    id: string;
-    usuarioId: string;
-    carroId: string;
-    listaGaragemId?: string | null;
-    favorito: boolean;
-    carro?: any;
-  };
 }
 
 interface CarCardProps {
@@ -26,6 +32,7 @@ interface CarCardProps {
 
 
 function CarCard({ car, styles }: CarCardProps) {
+  const router = useRouter();
   const [imgUri, setImgUri] = React.useState(car.imagemLocal || car.foto || car.imagem || car.image);
   const [favorito, setFavorito] = React.useState(car.garagem?.favorito ?? false);
   const [garagem, setGaragem] = React.useState(car.garagem ?? null);
@@ -88,7 +95,12 @@ function CarCard({ car, styles }: CarCardProps) {
   };
 
   return (
-    <View style={styles.cardSmall} key={car.id}>
+    <TouchableOpacity
+      onPress={() => router.push({ pathname: '/car-detail', params: { car: JSON.stringify(car) } })}
+      activeOpacity={0.92}
+      style={styles.cardSmall}
+      key={car.id}
+    >
       <View style={styles.imageContainerSmall}>
         <Image
           source={{ uri: imgUri }}
@@ -130,14 +142,9 @@ function CarCard({ car, styles }: CarCardProps) {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { apiFetch } from '@/utils/api';
-import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -182,14 +189,10 @@ export default function SearchScreen() {
         autoFocus
       />
 
-      {loading && (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      )}
+      {loading && <ActivityIndicator color="#007AFF" style={{ marginBottom: 10 }} />}
 
       {/* Lista de nomes (Busca rápida) */}
-      {(!selectedCars || selectedCars.length === 0) && !loading && (
+      {(!selectedCars || selectedCars.length === 0) && (
         <FlatList
           data={results}
           keyExtractor={(_, idx) => idx.toString()}
@@ -218,7 +221,7 @@ export default function SearchScreen() {
               </TouchableOpacity>
             );
           }}
-          ListEmptyComponent={query.length > 0 && results.length === 0 ? <Text style={styles.empty}>Nenhum carro encontrado.</Text> : null}
+          ListEmptyComponent={!loading && query.length > 0 ? <Text style={styles.empty}>Nenhum carro encontrado.</Text> : null}
         />
       )}
 
