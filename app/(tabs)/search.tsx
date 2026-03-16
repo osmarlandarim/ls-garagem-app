@@ -221,7 +221,7 @@ export default function SearchScreen() {
               </TouchableOpacity>
             );
           }}
-          ListEmptyComponent={!loading && query.length > 0 ? <Text style={styles.empty}>Nenhum carro encontrado.</Text> : null}
+          //ListEmptyComponent={!loading && query.length > 0 ? <Text style={styles.empty}>Nenhum carro encontrado.</Text> : null}
         />
       )}
 
