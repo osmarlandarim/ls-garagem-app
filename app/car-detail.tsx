@@ -67,7 +67,7 @@ export default function CarDetailScreen() {
   // Monta lista de campos dinâmicamente
   // Remover id, marcaid, fotoLocal/imagemLocal/foto/imagem/image/garagem
   // Garantir que corDetalhe (detailColor) fique por último
-  const excludeFields = ['id', 'marcaid', 'marcaId', 'isSTH', 'imagemLocal', 'fotoLocal', 'foto', 'imagem', 'image', 'garagem'];
+  const excludeFields = ['id', 'marcaid', 'marcaId', 'isSTH', 'imagemLocal', 'imageLocal', 'fotoLocal', 'foto', 'imagem', 'image', 'garagem'];
   let keys = Object.keys(car).filter(key => !excludeFields.includes(key) && car[key] !== undefined && car[key] !== null && car[key] !== '');
   // Move corDetalhe/detailColor para o final
   const corDetalheIdx = keys.findIndex(k => k.toLowerCase() === 'cordetalhe' || k.toLowerCase() === 'detailcolor');

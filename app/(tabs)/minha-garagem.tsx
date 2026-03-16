@@ -1,9 +1,10 @@
 import { CardCar } from '@/components/card-car';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
 import { apiFetch } from '@/utils/api';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 export default function MinhaGaragemScreen() {
@@ -76,18 +77,68 @@ export default function MinhaGaragemScreen() {
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }) => {
           // Garante que imageLocal seja passado corretamente
+          // item.id é o id da garagem, necessário para o DELETE
           const carro = {
             ...item.carro,
             imagemLocal: item.carro.imageLocal || item.carro.imagemLocal || item.carro.fotoLocal || item.carro.foto || item.carro.imagem || item.carro.image,
           };
+          const handleRemove = async () => {
+            try {
+              setLoading(true);
+              await apiFetch(`http://localhost:3000/garagens/${item.id}`, { method: 'DELETE' });
+              setGaragem(prev => prev.filter((g: any) => g.id !== item.id));
+              Alert.alert('Sucesso', 'Carro removido da garagem!');
+            } catch (e) {
+              Alert.alert('Erro', 'Não foi possível remover o carro.');
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          const handleToggleFavorito = async () => {
+            try {
+              setLoading(true);
+              const novoFavorito = !item.favorito;
+              await apiFetch(`http://localhost:3000/garagens/${item.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ favorito: novoFavorito })
+              });
+              setGaragem(prev => prev.map((g: any) => g.id === item.id ? { ...g, favorito: novoFavorito } : g));
+            } catch (e) {
+              Alert.alert('Erro', 'Não foi possível atualizar favorito.');
+            } finally {
+              setLoading(false);
+            }
+          };
           return (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.push({ pathname: '/car-detail', params: { car: JSON.stringify(carro) } })}
-              style={{ flex: 1 }}
-            >
-              <CardCar carro={carro} />
-            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => router.push({ pathname: '/car-detail', params: { car: JSON.stringify(carro) } })}
+                  style={{ flex: 1 }}
+                >
+                  <CardCar carro={carro} />
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 8, marginBottom: 8 }}>
+                <TouchableOpacity
+                  onPress={handleRemove}
+                  style={{ backgroundColor: '#e53935', borderRadius: 20, padding: 8, alignItems: 'center', justifyContent: 'center' }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="minus" size={5} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleToggleFavorito}
+                  style={{ marginLeft: 12, borderRadius: 20, padding: 8, alignItems: 'center', justifyContent: 'center' }}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name={item.favorito ? 'star.fill' : 'star'} size={22} color={item.favorito ? '#FFD600' : '#bbb'} />
+                </TouchableOpacity>
+              </View>
+            </View>
           );
         }}
         ListEmptyComponent={<Text>Nenhum carro na garagem.</Text>}
