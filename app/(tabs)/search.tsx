@@ -8,6 +8,15 @@ interface Car {
   name: string;
   year?: string | number;
   color?: string;
+  sku?: string;
+  garagem?: {
+    id: string;
+    usuarioId: string;
+    carroId: string;
+    listaGaragemId?: string | null;
+    favorito: boolean;
+    carro?: any;
+  };
 }
 
 interface CarCardProps {
@@ -91,6 +100,9 @@ function CarCard({ car, styles }: CarCardProps) {
       </View>
       <View style={styles.cardInfoSmall}>
         <Text style={styles.cardTitleSmall} numberOfLines={2}>{car.name}</Text>
+        {car.sku && (
+          <Text style={[styles.cardSubSmall, { color: '#888', fontSize: 10 }]} numberOfLines={1}>{car.sku}</Text>
+        )}
         <Text style={styles.cardSubSmall}>{car.year} {car.color ? `- ${car.color}` : ''}</Text>
         <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}>
           {garagem ? (
@@ -170,10 +182,14 @@ export default function SearchScreen() {
         autoFocus
       />
 
-      {loading && <ActivityIndicator color="#007AFF" style={{ marginBottom: 10 }} />}
+      {loading && (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
 
       {/* Lista de nomes (Busca rápida) */}
-      {(!selectedCars || selectedCars.length === 0) && (
+      {(!selectedCars || selectedCars.length === 0) && !loading && (
         <FlatList
           data={results}
           keyExtractor={(_, idx) => idx.toString()}
@@ -202,7 +218,7 @@ export default function SearchScreen() {
               </TouchableOpacity>
             );
           }}
-          ListEmptyComponent={!loading && query.length > 0 ? <Text style={styles.empty}>Nenhum carro encontrado.</Text> : null}
+          ListEmptyComponent={query.length > 0 && results.length === 0 ? <Text style={styles.empty}>Nenhum carro encontrado.</Text> : null}
         />
       )}
 
