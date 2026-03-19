@@ -25,6 +25,9 @@ export default function CarCreateScreen() {
     const [designer, setDesigner] = useState('');
     const [image, setImage] = useState('');
     const [imageUri, setImageUri] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<any>(null); // Para armazenar o arquivo selecionado
+    // Para web: input file
+    const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [brands, setBrands] = useState<{ id: string; descricao: string }[]>([]);
     const [brandId, setBrandId] = useState<string | null>(null);
     // Busca marcas ao montar
@@ -38,7 +41,11 @@ export default function CarCreateScreen() {
     }, []);
     // Abre a câmera para tirar foto
     const handleTakePhoto = async () => {
-        // Solicita permissão
+        if (Platform.OS === 'web') {
+            // Para web, aciona input file
+            fileInputRef.current?.click();
+            return;
+        }
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
             Alert.alert('Permissão negada', 'Permita o acesso à câmera para tirar uma foto.');
@@ -49,11 +56,23 @@ export default function CarCreateScreen() {
             allowsEditing: true,
             aspect: [4, 3],
             quality: 0.7,
-            base64: true,
         });
         if (!result.canceled && result.assets && result.assets.length > 0) {
             setImageUri(result.assets[0].uri);
-            setImage(Platform.OS === 'web' ? result.assets[0].uri : `data:image/jpeg;base64,${result.assets[0].base64}`);
+            setImageFile({
+                uri: result.assets[0].uri,
+                name: result.assets[0].fileName || `photo_${Date.now()}.jpg`,
+                type: result.assets[0].type || 'image/jpeg',
+            });
+        }
+    };
+
+    // Para web: tratar seleção de arquivo
+    const handleFileChange = (e: any) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+            setImageUri(URL.createObjectURL(file));
         }
     };
     const [loading, setLoading] = useState(false);
@@ -65,30 +84,51 @@ export default function CarCreateScreen() {
         }
         setLoading(true);
         try {
-            const res = await apiFetch('http://localhost:3000/carros', {
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('maiLine', maiLine);
+            formData.append('year', year ? String(Number(year)) : ''); // garantir número como string
+            formData.append('segment', segment);
+            formData.append('color', color);
+            formData.append('detailColor', detailColor);
+            formData.append('baseColor', baseColor);
+            formData.append('windowColor', windowColor);
+            formData.append('interiorColor', interiorColor);
+            formData.append('weelType', weelType);
+            formData.append('sku', sku);
+            formData.append('skuCasting', skuCasting);
+            formData.append('country', country);
+            formData.append('notes', notes);
+            formData.append('isSTH', isSTH ? 'true' : 'false'); // Prisma espera boolean, backend deve converter
+            formData.append('designer', designer);
+            formData.append('foto', image || ''); // sempre enviar campo foto
+            formData.append('marcaId', brandId);
+            // Enviar marca como objeto connect (string JSON)
+            //if (brandId) {
+              //  formData.append('marca', JSON.stringify({ connect: { id: brandId } }));
+            //}
+            if (imageFile) {
+                // Para web, imageFile já é File. Para mobile, precisa ser objeto com uri, name, type
+                if (Platform.OS === 'web') {
+                    formData.append('fotoArquivo', imageFile);
+                } else {
+                    formData.append('fotoArquivo', {
+                        uri: imageFile.uri,
+                        name: imageFile.name,
+                        type: imageFile.type,
+                    } as any);
+                }
+            }
+            const fetchOptions: any = {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name,
-                    maiLine,
-                    year: Number(year),
-                    segment,
-                    color,
-                    detailColor,
-                    baseColor,
-                    windowColor,
-                    interiorColor,
-                    weelType,
-                    sku,
-                    skuCasting,
-                    country,
-                    notes,
-                    isSTH,
-                    designer,
-                    foto: image,
-                    marcaId: brandId
-                })
-            });
+                body: formData,
+                headers: { 'Accept': 'application/json' },
+            };
+            // No mobile, não definir Content-Type (deixe o fetch definir)
+            if (Platform.OS !== 'web') {
+                delete fetchOptions.headers;
+            }
+            const res = await fetch('http://localhost:3000/carros', fetchOptions);
             if (!res.ok) throw new Error('Erro ao cadastrar carro');
             Alert.alert('Sucesso', 'Carro cadastrado com sucesso!');
             router.back();
@@ -183,18 +223,28 @@ export default function CarCreateScreen() {
                 ) : null}
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#007AFF' }]} onPress={handleTakePhoto}>
-                        <Text style={styles.buttonText}>Tirar foto</Text>
+                        <Text style={styles.buttonText}>{Platform.OS === 'web' ? 'Selecionar imagem' : 'Tirar foto'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#aaa' }]} onPress={() => setImageUri(null)}>
+                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#aaa' }]} onPress={() => { setImageUri(null); setImageFile(null); }}>
                         <Text style={styles.buttonText}>Remover foto</Text>
                     </TouchableOpacity>
                 </View>
+                {/* Input file para web */}
+                {Platform.OS === 'web' && (
+                    <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                    />
+                )}
                 <Text style={{ color: '#888', fontSize: 12, marginTop: 4 }}>Ou insira uma URL abaixo:</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="URL da imagem"
+                    placeholder="URL da imagem (apenas web)"
                     value={image}
-                    onChangeText={text => { setImage(text); setImageUri(text ? text : null); }}
+                    onChangeText={text => { setImage(text); setImageUri(text ? text : null); setImageFile(null); }}
                 />
             </View>
             <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
