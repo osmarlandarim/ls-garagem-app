@@ -80,7 +80,7 @@ export default function MinhaGaragemScreen() {
           // item.id é o id da garagem, necessário para o DELETE
           const carro = {
             ...item.carro,
-            imagemLocal: item.carro.imageLocal || item.carro.imagemLocal || item.carro.fotoLocal || item.carro.foto || item.carro.imagem || item.carro.image,
+            imagemLocal: item.carro.fotoLocal || item.carro.foto || item.carro.imageLocal || item.carro.imagemLocal || item.carro.imagem || item.carro.image,
           };
           const handleRemove = async () => {
             try {

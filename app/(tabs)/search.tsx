@@ -160,34 +160,44 @@ export default function SearchScreen() {
     }
   }, [query]);
 
+  const router = useRouter();
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Buscar carro..."
-        value={query}
-        onChangeText={async (text) => {
-          setQuery(text);
-          if (text.length === 0) {
-            setResults([]);
-            setSelectedCars(null); // Limpa os cards ao limpar o campo
-            return;
-          }
-          setSelectedCars(null); // Sempre limpa os cards ao digitar
-          setLoading(true);
-          try {
-            const res = await apiFetch(`http://localhost:3000/carros/search?q=${encodeURIComponent(text)}&pageSize=5`);
-            const data = await res.json();
-            setResults(Array.isArray(data) ? data : [data]);
-          } catch {
-            setResults([]);
-          } finally {
-            setLoading(false);
-          }
-        }}
-        returnKeyType="search"
-        autoFocus
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+        <TextInput
+          style={[styles.input, { flex: 1, marginBottom: 0 }]}
+          placeholder="Buscar carro..."
+          value={query}
+          onChangeText={async (text) => {
+            setQuery(text);
+            if (text.length === 0) {
+              setResults([]);
+              setSelectedCars(null); // Limpa os cards ao limpar o campo
+              return;
+            }
+            setSelectedCars(null); // Sempre limpa os cards ao digitar
+            setLoading(true);
+            try {
+              const res = await apiFetch(`http://localhost:3000/carros/search?q=${encodeURIComponent(text)}&pageSize=5`);
+              const data = await res.json();
+              setResults(Array.isArray(data) ? data : [data]);
+            } catch {
+              setResults([]);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          returnKeyType="search"
+          autoFocus
+        />
+        <TouchableOpacity
+          onPress={() => router.push('/car-create')}
+          style={{ marginLeft: 10, backgroundColor: '#007AFF', borderRadius: 8, padding: 8 }}
+          accessibilityLabel="Cadastrar novo carro"
+        >
+          <IconSymbol name="plus" color="#fff" size={24} />
+        </TouchableOpacity>
+      </View>
 
       {loading && <ActivityIndicator color="#007AFF" style={{ marginBottom: 10 }} />}
 
